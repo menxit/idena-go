@@ -5,6 +5,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	"time"
+
 	mapset "github.com/deckarep/golang-set"
 	"github.com/idena-network/idena-go/blockchain"
 	"github.com/idena-network/idena-go/blockchain/attachments"
@@ -20,7 +22,6 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
-	"time"
 )
 
 type DnaApi struct {
@@ -68,13 +69,14 @@ func (api *DnaApi) GetBalance(address common.Address) Balance {
 
 // SendTxArgs represents the arguments to sumbit a new transaction into the transaction pool.
 type SendTxArgs struct {
-	Type    types.TxType    `json:"type"`
-	From    common.Address  `json:"from"`
-	To      *common.Address `json:"to"`
-	Amount  decimal.Decimal `json:"amount"`
-	MaxFee  decimal.Decimal `json:"maxFee"`
-	Payload *hexutil.Bytes  `json:"payload"`
-	Tips    decimal.Decimal `json:"tips"`
+	Type       types.TxType    `json:"type"`
+	From       common.Address  `json:"from"`
+	To         *common.Address `json:"to"`
+	Amount     decimal.Decimal `json:"amount"`
+	MaxFee     decimal.Decimal `json:"maxFee"`
+	Payload    *hexutil.Bytes  `json:"payload"`
+	Tips       decimal.Decimal `json:"tips"`
+	PrivateKey string          `json:"privateKey"`
 	BaseTxArgs
 }
 
@@ -183,7 +185,12 @@ func (api *DnaApi) SendTransaction(ctx context.Context, args SendTxArgs) (common
 		payload = *args.Payload
 	}
 
-	return api.baseApi.sendTx(ctx, args.From, args.To, args.Type, args.Amount, args.MaxFee, args.Tips, args.Nonce, args.Epoch, payload, nil)
+	var privateKey *ecdsa.PrivateKey
+	if args.PrivateKey != "" {
+		privateKey, _ = crypto.HexToECDSA(args.PrivateKey)
+	}
+
+	return api.baseApi.sendTx(ctx, args.From, args.To, args.Type, args.Amount, args.MaxFee, args.Tips, args.Nonce, args.Epoch, payload, privateKey)
 }
 
 type FlipWords struct {
